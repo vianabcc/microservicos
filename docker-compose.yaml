@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  movies:
+    image: vianabcc/movie
+    build:
+      context: ./movie/src/
+    environment:
+      MONGODB_URI: "mongodb://mongouser:mongopwd@mongodb:27017/admin"
+    ports:
+      - 8181:8181
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo  
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongouser
+      MONGO_INITDB_ROOT_PASSWORD: mongopwd  
+    volumes:
+      - mongo_vol:/data/db
+    ports:
+      - 27017:27017
+
+  review:
+    image: vianabcc/review
+    build:
+      context: ./review/src/Review.Web/
+    environment:
+      ConnectionStrings__MyConnection: Host=postgresdb;Database=postgres;Username=postgresuser;Password=postgrespwd
+    ports:
+      - 8282:80
+    depends_on:
+      - postgresdb  
+
+  postgresdb:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgresuser
+      POSTGRES_PASSWORD: postgrespwd
+    volumes:
+          - postgres_vol:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  rotten-potatoes:
+    image: vianabcc/rotten-potatoes-ms
+    build:
+      context: ./rotten-potatoes-ms/src/
+    environment:
+      MOVIE_SERVICE_URI: http://movies:8181
+      REVIEW_SERVICE_URI: http://review:80
+    ports:
+      - 5000:5000
+    depends_on:
+      - movies
+      - review
+      
+volumes:
+  mongo_vol:
+  postgres_vol:
